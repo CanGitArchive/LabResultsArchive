@@ -1,0 +1,30 @@
+# --- User data (NEVER tracked publicly) ---
+# All medical results, source PDFs, exports, backups, and the optional
+# tunnel token live under DATA/LabResultsArchive/ on each user's own
+# machine. Per CLAUDE.md non-negotiable #4, the app's data folder is
+# gitignored by design.
+DATA/
+*.env
+
+# --- Build artifacts (PyInstaller .exe is rebuilt locally; not versioned) ---
+*.exe
+build/
+dist/
+*.spec
+__pycache__/
+*.py[cod]
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Editor / OS / local tooling ---
+CLAUDE.md
+.claude/
+.vscode/
+.idea/
+*.code-workspace
+Thumbs.db
+desktop.ini
+.DS_Store

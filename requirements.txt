@@ -1,0 +1,8 @@
+# LabResultsArchive — unified app dependencies.
+# The desktop app hosts the Flask PWA in-process on a background thread,
+# so one Python environment runs everything.
+# Install:  py -m pip install -r requirements.txt
+PyQt6>=6.6
+flask>=3.0
+python-dotenv>=1.0
+pillow>=10.0          # only for tools/make_icons.py (PWA icon regeneration)

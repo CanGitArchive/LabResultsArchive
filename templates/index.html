@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ app_name }}</title>
+  <meta name="theme-color" content="#13121a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="{{ api_base }}/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ api_base }}/static/icon-192.png?v={{ icon_ver }}">
+  <link rel="apple-touch-icon" sizes="192x192" href="{{ api_base }}/static/icon-192.png?v={{ icon_ver }}">
+  <style>
+    :root {
+      --bg:#13121a;
+      --panel:#1c1b25;
+      --panel-hi:#262533;
+      --line:#272631;
+      --text:#d7d8e0;
+      --muted:#8b8a96;
+      --accent:#9b88ff;
+      --red:#e2475a;
+    }
+    * { box-sizing:border-box; }
+    html, body {
+      margin:0; padding:0; min-height:100vh;
+      background:var(--bg); color:var(--text);
+      font:15px/1.45 system-ui, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color:transparent;
+    }
+    header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px 6px;
+    }
+    header h1 { font-size:18px; margin:0; font-weight:600; letter-spacing:0.2px; }
+    button.icon-btn {
+      background:transparent; border:0; color:var(--muted);
+      font:inherit; cursor:pointer; padding:6px 10px;
+    }
+    button.icon-btn:hover { color:var(--text); }
+
+    nav.tabs { display:flex; gap:4px; padding:8px 12px 0; border-bottom:1px solid var(--line); }
+    nav.tabs button {
+      flex:1; padding:10px 8px; background:transparent; color:var(--muted);
+      border:0; border-bottom:2px solid transparent;
+      font:inherit; cursor:pointer;
+    }
+    nav.tabs button.active { color:var(--text); border-bottom-color:var(--accent); }
+
+    main { padding:12px 14px 40px; }
+    .pane { display:none; }
+    .pane.active { display:block; }
+
+    input[type=search], input[type=text] {
+      width:100%; padding:11px 12px;
+      background:var(--panel); border:1px solid var(--line); border-radius:8px;
+      color:var(--text); font:inherit;
+    }
+    input[type=search]:focus, input[type=text]:focus { outline:none; border-color:var(--accent); }
+
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; }
+    .chip {
+      padding:6px 10px; border-radius:999px; border:1px solid var(--line);
+      background:var(--panel); color:var(--muted);
+      font-size:13px; cursor:pointer; user-select:none;
+    }
+    .chip.active { background:var(--accent); border-color:var(--accent); color:#0f0e15; }
+
+    .status { color:var(--muted); font-size:12px; padding:8px 2px 4px; }
+
+    .card {
+      background:var(--panel); border:1px solid var(--line); border-radius:10px;
+      padding:10px 12px; margin:8px 0;
+      display:flex; align-items:center; gap:10px;
+    }
+    .card-main { flex:1; min-width:0; }
+    .card-name {
+      font-size:14px; font-weight:500; word-break:break-all;
+    }
+    .card-meta {
+      margin-top:4px; display:flex; gap:8px; flex-wrap:wrap;
+      font-size:11.5px; color:var(--muted);
+    }
+    .badge {
+      padding:1px 6px; border-radius:4px;
+      background:var(--panel-hi); color:var(--text);
+    }
+    .card-actions { display:flex; gap:6px; flex-shrink:0; }
+    .card-actions button {
+      padding:7px 10px; background:var(--panel-hi); border:1px solid var(--line);
+      border-radius:6px; color:var(--text); font:inherit; cursor:pointer;
+      font-size:13px;
+    }
+    .card-actions button:active { background:var(--accent); color:#0f0e15; }
+
+    /* Blood values table */
+    .vtable { width:100%; border-collapse:collapse; margin-top:8px; }
+    .vtable th, .vtable td {
+      text-align:left; padding:8px 6px;
+      border-bottom:1px solid var(--line);
+      font-size:13.5px;
+    }
+    .vtable th { color:var(--muted); font-weight:500; font-size:11.5px; text-transform:uppercase; letter-spacing:0.4px; }
+    .vtable td.value { font-weight:600; }
+
+    .placeholder { color:var(--muted); padding:24px 8px; text-align:center; font-size:14px; }
+    .err { color:var(--red); padding:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ app_name }}</h1>
+    <button class="icon-btn" id="refresh-btn" title="Reindex files">refresh</button>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="files" class="active">Files</button>
+    <button data-tab="values">Blood Values</button>
+  </nav>
+
+  <main>
+    <section id="pane-files" class="pane active">
+      <input id="files-search" type="search" placeholder="Search files (filename, date)..." autocomplete="off">
+      <div class="chips" id="folder-chips"></div>
+      <div class="status" id="files-status"></div>
+      <div id="files-list"></div>
+    </section>
+
+    <section id="pane-values" class="pane">
+      <input id="values-search" type="search" placeholder="Search a blood test (e.g. Vitamin D)..." autocomplete="off" list="values-suggest">
+      <datalist id="values-suggest"></datalist>
+      <div class="status" id="values-status"></div>
+      <div id="values-list"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = "{{ api_base }}";
+
+    // -----------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------
+    function fmtSize(n) {
+      if (n == null) return "";
+      if (n < 1024) return n + " B";
+      if (n < 1024*1024) return (n/1024).toFixed(0) + " KB";
+      if (n < 1024*1024*1024) return (n/1024/1024).toFixed(1) + " MB";
+      return (n/1024/1024/1024).toFixed(1) + " GB";
+    }
+    function debounce(fn, ms) {
+      let t = null;
+      return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+    }
+    function el(tag, attrs, ...children) {
+      const node = document.createElement(tag);
+      for (const k in (attrs || {})) {
+        if (k === "class") node.className = attrs[k];
+        else if (k === "dataset") Object.assign(node.dataset, attrs[k]);
+        else if (k.startsWith("on")) node.addEventListener(k.slice(2), attrs[k]);
+        else node.setAttribute(k, attrs[k]);
+      }
+      for (const c of children) {
+        if (c == null) continue;
+        node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+      }
+      return node;
+    }
+
+    // -----------------------------------------------------------------
+    // Tab switching
+    // -----------------------------------------------------------------
+    document.querySelectorAll("nav.tabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll("nav.tabs button").forEach(b => b.classList.toggle("active", b === btn));
+        document.querySelectorAll(".pane").forEach(p => p.classList.toggle("active", p.id === "pane-" + tab));
+      });
+    });
+
+    // -----------------------------------------------------------------
+    // Files tab
+    // -----------------------------------------------------------------
+    let activeFolder = "";
+
+    async function loadFolders() {
+      try {
+        const r = await fetch(API + "/api/folders");
+        const j = await r.json();
+        const chips = document.getElementById("folder-chips");
+        chips.innerHTML = "";
+        const mkChip = (id, label, disabled) => {
+          const c = el("button", {
+            class: "chip" + (activeFolder === id ? " active" : ""),
+            dataset: { id },
+            onclick: () => { activeFolder = id; loadFiles(); document.querySelectorAll("#folder-chips .chip").forEach(b => b.classList.toggle("active", b.dataset.id === id)); }
+          }, label);
+          if (disabled) c.style.opacity = "0.5";
+          return c;
+        };
+        chips.appendChild(mkChip("", "All", false));
+        for (const f of j.items) {
+          chips.appendChild(mkChip(f.id, f.label + (f.exists ? "" : " (missing)"), !f.exists));
+        }
+      } catch (e) {
+        document.getElementById("files-status").textContent = "Folder list failed: " + e.message;
+      }
+    }
+
+    async function loadFiles() {
+      const q = document.getElementById("files-search").value.trim();
+      const status = document.getElementById("files-status");
+      const list = document.getElementById("files-list");
+      status.textContent = "Loading...";
+      list.innerHTML = "";
+      try {
+        const params = new URLSearchParams();
+        if (q) params.set("q", q);
+        if (activeFolder) params.set("folder", activeFolder);
+        const r = await fetch(API + "/api/files?" + params.toString());
+        const j = await r.json();
+        status.textContent = `${j.count} file${j.count === 1 ? "" : "s"}` + (j.items.length < j.count ? ` (showing ${j.items.length})` : "");
+        if (!j.items.length) {
+          list.appendChild(el("div", { class: "placeholder" }, "No files match."));
+          return;
+        }
+        for (const f of j.items) {
+          list.appendChild(renderFileCard(f));
+        }
+      } catch (e) {
+        status.textContent = "";
+        list.appendChild(el("div", { class: "err" }, "Load failed: " + e.message));
+      }
+    }
+
+    function renderFileCard(f) {
+      const open = el("button", { onclick: () => window.open(API + "/preview/" + f.id, "_blank") }, "Open");
+      const dl   = el("button", { onclick: () => downloadFile(f) }, "Save");
+      const sh   = el("button", { onclick: () => shareFile(f) }, "Share");
+      return el("div", { class: "card" },
+        el("div", { class: "card-main" },
+          el("div", { class: "card-name" }, f.name),
+          el("div", { class: "card-meta" },
+            el("span", { class: "badge" }, f.folder_label),
+            f.date ? el("span", null, f.date) : null,
+            el("span", null, fmtSize(f.size)),
+          ),
+        ),
+        el("div", { class: "card-actions" }, open, dl, sh),
+      );
+    }
+
+    function downloadFile(f) {
+      const a = document.createElement("a");
+      a.href = API + "/download/" + f.id;
+      a.download = f.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function shareFile(f) {
+      try {
+        const resp = await fetch(API + "/preview/" + f.id);
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const blob = await resp.blob();
+        const file = new File([blob], f.name, { type: blob.type || "application/octet-stream" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: f.name });
+          return;
+        }
+        // Fallback: trigger a download
+        downloadFile(f);
+      } catch (e) {
+        if (e.name === "AbortError") return;  // user cancelled share sheet
+        alert("Share failed: " + e.message);
+      }
+    }
+
+    document.getElementById("files-search").addEventListener("input", debounce(loadFiles, 200));
+
+    // -----------------------------------------------------------------
+    // Blood values tab
+    // -----------------------------------------------------------------
+    async function loadBloodTestNames() {
+      try {
+        const r = await fetch(API + "/api/bloodtests");
+        const j = await r.json();
+        const dl = document.getElementById("values-suggest");
+        dl.innerHTML = "";
+        for (const name of j.items) {
+          dl.appendChild(el("option", { value: name }));
+        }
+      } catch (e) {
+        document.getElementById("values-status").textContent = "Autocomplete load failed.";
+      }
+    }
+
+    async function loadBloodValues() {
+      const q = document.getElementById("values-search").value.trim();
+      const status = document.getElementById("values-status");
+      const list = document.getElementById("values-list");
+      list.innerHTML = "";
+      if (!q) {
+        status.textContent = "";
+        list.appendChild(el("div", { class: "placeholder" }, "Type a test name (e.g. Vitamin D, TSH, Ferritin)."));
+        return;
+      }
+      status.textContent = "Loading...";
+      try {
+        const r = await fetch(API + "/api/bloodvalues?q=" + encodeURIComponent(q));
+        const j = await r.json();
+        if (!j.count) {
+          status.textContent = "";
+          list.appendChild(el("div", { class: "placeholder" }, "No matches for \"" + q + "\"."));
+          return;
+        }
+        // Group by test name (each row is a record)
+        const grouped = {};
+        for (const r of j.items) {
+          (grouped[r.test_name_en] ||= []).push(r);
+        }
+        status.textContent = `${j.count} result${j.count === 1 ? "" : "s"} across ${Object.keys(grouped).length} test${Object.keys(grouped).length === 1 ? "" : "s"}.`;
+        for (const [name, rows] of Object.entries(grouped)) {
+          list.appendChild(renderValueGroup(name, rows));
+        }
+      } catch (e) {
+        status.textContent = "";
+        list.appendChild(el("div", { class: "err" }, "Load failed: " + e.message));
+      }
+    }
+
+    function renderValueGroup(name, rows) {
+      const header = el("div", { style: "margin:18px 0 4px; font-weight:600;" }, name);
+      const table = el("table", { class: "vtable" });
+      const thead = el("thead", null,
+        el("tr", null,
+          el("th", null, "Date"),
+          el("th", null, "Value"),
+          el("th", null, "Unit"),
+        ),
+      );
+      const tbody = el("tbody");
+      for (const r of rows) {
+        tbody.appendChild(el("tr", null,
+          el("td", null, r.date),
+          el("td", { class: "value" }, r.value),
+          el("td", null, r.unit || ""),
+        ));
+      }
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      return el("div", null, header, table);
+    }
+
+    document.getElementById("values-search").addEventListener("input", debounce(loadBloodValues, 200));
+
+    // -----------------------------------------------------------------
+    // Refresh
+    // -----------------------------------------------------------------
+    document.getElementById("refresh-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("refresh-btn");
+      const orig = btn.textContent;
+      btn.textContent = "...";
+      btn.disabled = true;
+      try {
+        await fetch(API + "/api/refresh", { method: "POST" });
+        await loadFolders();
+        await loadFiles();
+        await loadBloodTestNames();
+        if (document.getElementById("values-search").value.trim()) await loadBloodValues();
+      } finally {
+        btn.textContent = orig;
+        btn.disabled = false;
+      }
+    });
+
+    // -----------------------------------------------------------------
+    // Service worker - required for installable PWA
+    // -----------------------------------------------------------------
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register(API + "/sw.js", { scope: API + "/" })
+        .catch(err => console.warn("SW register failed:", err));
+    }
+
+    // -----------------------------------------------------------------
+    // Initial load
+    // -----------------------------------------------------------------
+    loadFolders().then(loadFiles);
+    loadBloodTestNames();
+    loadBloodValues();  // shows placeholder
+  </script>
+</body>
+</html>
