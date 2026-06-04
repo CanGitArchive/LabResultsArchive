@@ -61,8 +61,8 @@ server, one Python environment runs everything, one PyInstaller build target.
   leaves cells with no defined range uncolored. Both data files default to
   empty / created on first run, populate via the Edit tab.
 
-- **Tray menu.** Open GUI ,  Open PWA in browser ,  Start/Stop PWA ,  ✅ Run at
-  Windows startup ,  Exit. The "Run at startup" toggle writes/deletes the
+- **Tray menu.** Open GUI, Open PWA in browser, Start/Stop PWA, ✅ Run at
+  Windows startup, Exit. The "Run at startup" toggle writes/deletes the
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LabResultsArchive`
   registry value via stdlib `winreg`, preferring `pythonw.exe` over
   `python.exe` for the autostart command so no console flashes at login.
