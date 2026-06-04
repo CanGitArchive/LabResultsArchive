@@ -63,7 +63,7 @@ CLOUDFLARE_TUNNEL_TOKEN=<your-tunnel-token>
 APP_PUBLIC_URL=https://lab.example.com
 ```
 
-…and the app auto-spawns `cloudflared` on launch, reaps it on exit (the Job
+...and the app auto-spawns `cloudflared` on launch, reaps it on exit (the Job
 Object pattern that drove the `docs/CLOUDFLARED_ORPHAN_CHECKUP.md` writeup),
 and the tray's "Open PWA in browser" menu jumps to your public URL.
 

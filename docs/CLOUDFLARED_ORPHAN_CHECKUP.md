@@ -266,4 +266,4 @@ stored somewhere long-lived (not garbage-collected).
 - [ ] A startup self-heal kills orphans by **this app's** token.
 - [ ] Force-kill test passes: kill the app hard → cloudflared dies in seconds.
 - [ ] (If relevant) the cloudflared Public Hostname is **HTTP**, not HTTPS
-      (HTTPS → 502 `tls: first record…`; different bug, see playbook §5).
+      (HTTPS → 502 `tls: first record...`; different bug, see playbook §5).

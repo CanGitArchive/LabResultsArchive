@@ -33,7 +33,7 @@ server, one Python environment runs everything, one PyInstaller build target.
   before anything else runs.
 
 - **Cloudflare tunnel with reliable child reaping.** `app.py` auto-spawns
-  `cloudflared tunnel run --token <…>` when a token is configured, bound to a
+  `cloudflared tunnel run --token <...>` when a token is configured, bound to a
   Windows Job Object with `KILL_ON_JOB_CLOSE` so a force-kill of the parent
   reaps the tunnel child too. The Job-object pattern looked correct but was
   silently broken on 64-bit Python, see the writeup in
@@ -61,8 +61,8 @@ server, one Python environment runs everything, one PyInstaller build target.
   leaves cells with no defined range uncolored. Both data files default to
   empty / created on first run, populate via the Edit tab.
 
-- **Tray menu.** Open GUI · Open PWA in browser · Start/Stop PWA · ✅ Run at
-  Windows startup · Exit. The "Run at startup" toggle writes/deletes the
+- **Tray menu.** Open GUI ,  Open PWA in browser ,  Start/Stop PWA ,  ✅ Run at
+  Windows startup ,  Exit. The "Run at startup" toggle writes/deletes the
   `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LabResultsArchive`
   registry value via stdlib `winreg`, preferring `pythonw.exe` over
   `python.exe` for the autostart command so no console flashes at login.
