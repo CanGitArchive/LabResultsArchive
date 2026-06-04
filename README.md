@@ -5,6 +5,8 @@ lab) results over time — with an installable phone app (PWA) so you can pull
 up "show me my Vitamin D over the years" from anywhere. All data lives on your
 own machine as plain JSON; no cloud account, no third-party storage.
 
+<img width="1494" height="646" alt="BloodTestView" src="https://github.com/user-attachments/assets/461933eb-e0f4-485a-bb26-f6a43250cfc1" />
+
 ## Features
 
 - **Long-term lab archive** — drop result PDFs in a folder, enter the values in
