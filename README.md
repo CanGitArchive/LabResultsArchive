@@ -1,7 +1,7 @@
 # Lab Results Archive
 
 A single-file PyQt6 desktop app for archiving your own blood-test (and other
-lab) results over time — with an installable phone app (PWA) so you can pull
+lab) results over time, with an installable phone app (PWA) so you can pull
 up "show me my Vitamin D over the years" from anywhere. All data lives on your
 own machine as plain JSON; no cloud account, no third-party storage.
 
@@ -9,17 +9,17 @@ own machine as plain JSON; no cloud account, no third-party storage.
 
 ## Features
 
-- **Long-term lab archive** — drop result PDFs in a folder, enter the values in
+- **Long-term lab archive**: drop result PDFs in a folder, enter the values in
   the desktop GUI, and get a per-test history with reference-range coloring.
-- **Phone access (PWA)** — installable web app for file search across your
+- **Phone access (PWA)**: installable web app for file search across your
   indexed folders and per-test lookups ("Vitamin D" → every recorded date);
   the Web Share API ships a PDF to WhatsApp in two taps.
-- **System-tray controller** — hosts the Flask PWA in-process on a background
+- **System-tray controller**: hosts the Flask PWA in-process on a background
   thread (no subprocess, no second console); right-click to open the GUI,
   start/stop the phone server, or run at Windows startup.
-- **Doctor-ready exports** — per-date PDF / Markdown reports plus an
+- **Doctor-ready exports**: per-date PDF / Markdown reports plus an
   AI-analysis ZIP bundle for discussing a particular draw.
-- **Optional Cloudflare tunnel** — one env var makes the PWA reachable
+- **Optional Cloudflare tunnel**: one env var makes the PWA reachable
   HTTPS-from-anywhere, gated by your tunnel's access policy. LAN-only by
   default.
 
@@ -31,7 +31,7 @@ orphaning the tunnel child process across every restart.
 ## Tech
 
 Python 3.12, PyQt6 (desktop + tray), Flask + werkzeug `make_server` (PWA on a
-background thread), vanilla-JS PWA — no build step, no framework. Single Python
+background thread), vanilla-JS PWA, no build step, no framework. Single Python
 environment runs everything.
 
 ## Install & run
@@ -45,7 +45,7 @@ python lab_results_archive.py
 
 The app creates a portable `DATA/LabResultsArchive/` folder next to the script
 (or beside the `.exe` when packaged) for your results JSON, source PDFs,
-exports, and backups — copy the folder to take your data with you. First-run
+exports, and backups, copy the folder to take your data with you. First-run
 shows an empty archive; add records through the GUI's Edit tab.
 
 ## Phone access
@@ -80,5 +80,5 @@ pyinstaller --onefile --windowed --name LabResultsArchive `
 Keep `icon.ico` next to the resulting `.exe`; the app finds it automatically
 via the same `get_resource_path()` resolver used in dev mode. When a windowed
 build's `print()`s have no console to write to, the app routes them to
-`DATA/LabResultsArchive/Jobs/lab_results_archive.log` instead of crashing —
+`DATA/LabResultsArchive/Jobs/lab_results_archive.log` instead of crashing,
 useful for debugging frozen builds.

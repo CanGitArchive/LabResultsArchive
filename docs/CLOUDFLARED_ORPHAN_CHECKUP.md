@@ -31,7 +31,7 @@ Cloudflare load-balances across all of them.
 
 ---
 
-## Step 1 — Live diagnosis (PowerShell, on the machine)
+## Step 1: Live diagnosis (PowerShell, on the machine)
 
 **A. With the desktop app fully CLOSED, look for cloudflared:**
 
@@ -66,7 +66,7 @@ To kill a confirmed orphan immediately: `Stop-Process -Id <PID> -Force`.
 
 ---
 
-## Step 2 — Find the bug in the app's source
+## Step 2: Find the bug in the app's source
 
 Search the app's Python source for how it spawns / tears down cloudflared:
 
@@ -76,11 +76,11 @@ grep -nE "cloudflared|JobObject|AssignProcessToJobObject|KILL_ON_JOB_CLOSE|atexi
 
 Three failure modes, worst to "least bad":
 
-### Bug A — Job object with no ctypes `argtypes`/`restype`  ← the HealthTracker bug
+### Bug A: Job object with no ctypes `argtypes`/`restype`  ← the HealthTracker bug
 
 If you see `CreateJobObjectW` / `AssignProcessToJobObject` /
 `SetInformationJobObject` called via `ctypes` **without** preceding
-`.argtypes = [...]` / `.restype = ...` declarations — that's the bug.
+`.argtypes = [...]` / `.restype = ...` declarations, that's the bug.
 
 Why it fails: on 64-bit Python a Windows `HANDLE` is 64-bit, but an
 undeclared ctypes function defaults its int args/return to **32-bit**
@@ -92,21 +92,21 @@ The code *looks* correct and even "succeeds".
 Tell-tale: `kernel32.AssignProcessToJobObject(job, int(proc._handle))` with
 no argtypes nearby, and **no return-value check**.
 
-### Bug B — no Job object at all, only `atexit` / `proc.terminate()`
+### Bug B: no Job object at all, only `atexit` / `proc.terminate()`
 
 `atexit` handlers and `try/finally` do **not** run when the process is
 **force-killed** (Task Manager, `taskkill /F`) or crashes. Any hard exit
 then orphans cloudflared. A Job object is the only thing that survives a
 force-kill.
 
-### Bug C — tunnel started but never tracked
+### Bug C: tunnel started but never tracked
 
-`subprocess.Popen([... "cloudflared" ...])` with the handle thrown away —
+`subprocess.Popen([... "cloudflared" ...])` with the handle thrown away,
 nothing can ever stop it. Always orphans.
 
 ---
 
-## Step 3 — The fix (drop-in, Windows, stdlib only)
+## Step 3: The fix (drop-in, Windows, stdlib only)
 
 Two parts: (1) a Job object that **actually works**, (2) a startup
 self-heal that cleans up orphans from prior runs.
@@ -116,7 +116,7 @@ self-heal that cleans up orphans from prior runs.
 ```python
 def job_kill_on_close(proc):
     """Put `proc` in a Windows Job with KILL_ON_JOB_CLOSE so it dies with us,
-    even on a force-kill/crash. Return the job HANDLE — keep it alive for the
+    even on a force-kill/crash. Return the job HANDLE, keep it alive for the
     whole app lifetime (let it be garbage-collected and the child dies early).
     """
     import sys
@@ -155,7 +155,7 @@ def job_kill_on_close(proc):
             ]
 
         k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        # THE CRITICAL PART — without these declarations the HANDLE args are
+        # THE CRITICAL PART: without these declarations the HANDLE args are
         # truncated to 32 bits on 64-bit Python and the calls silently fail.
         k32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
         k32.CreateJobObjectW.restype = wintypes.HANDLE
@@ -194,10 +194,10 @@ app_state.cf_proc = proc
 app_state.cf_job  = job_kill_on_close(proc)        # keep handle alive!
 ```
 
-Also keep `atexit`/explicit `proc.terminate()` for clean exits — belt and
+Also keep `atexit`/explicit `proc.terminate()` for clean exits, belt and
 suspenders. The Job object is what covers force-kill/crash.
 
-### 3.2 Startup self-heal — kill orphans from prior runs
+### 3.2 Startup self-heal: kill orphans from prior runs
 
 Even with 3.1 correct, clean up anything a *previous* (buggy) build left
 behind. Match by **this app's token**, compared in Python, so other apps'
@@ -236,22 +236,22 @@ def kill_orphan_cloudflared(token):
 ```
 
 Call it **before** spawning the new cloudflared. Never interpolate the token
-into a shell command — read it from the app's config/`.env` and compare with
+into a shell command, read it from the app's config/`.env` and compare with
 Python's `in`, as above.
 
 ---
 
-## Step 4 — Verify the fix (the force-kill test)
+## Step 4: Verify the fix (the force-kill test)
 
 A graceful quit can't prove anything (atexit would clean up anyway). Prove
 the **Job object** works by force-killing the app:
 
 1. Start the app; confirm exactly one cloudflared is running (Step 1B).
-2. Force-kill the app process — `taskkill /F /PID <app_pid>` (this bypasses
+2. Force-kill the app process, `taskkill /F /PID <app_pid>` (this bypasses
    `atexit`, so only the Job object can save you).
 3. Within a few seconds, `Get-Process cloudflared` → **gone**.
 
-If cloudflared survives a force-kill, the Job object is still not working —
+If cloudflared survives a force-kill, the Job object is still not working,
 re-check the `argtypes`/`restype` declarations and that the job HANDLE is
 stored somewhere long-lived (not garbage-collected).
 
