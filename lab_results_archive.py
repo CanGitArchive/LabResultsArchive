@@ -48,7 +48,7 @@ DATA_DIR_NAME = "DATA"
 DEFAULT_ARCHIVE_DIR_NAME = "LabResultsArchive"
 DEFAULT_RESULTS_FILE = "blood_test_results.json"
 DEFAULT_RANGES_FILE = "test_ranges.json"
-NO_UNIT_PLACEHOLDER = "—"
+NO_UNIT_PLACEHOLDER = "-"
 
 KNOWN_MOJIBAKE_REPLACEMENTS = {
     "ﾂｵ": "µ",
@@ -217,12 +217,12 @@ def cell_text(value: Any, unit: Any, include_unit: bool = True) -> str:
     u = normalize_unit(unit)
     if not v:
         return ""
-    if include_unit and u and u != "—":
+    if include_unit and u and u != "-":
         return f"{v} {u}"
     return v
 
 
-def split_value_unit(text: str, fallback_unit: str = "—") -> Tuple[str, str]:
+def split_value_unit(text: str, fallback_unit: str = "-") -> Tuple[str, str]:
     """
     For importing wide CSV cells like:
       501 pg/mL
@@ -235,12 +235,12 @@ def split_value_unit(text: str, fallback_unit: str = "—") -> Tuple[str, str]:
     if not t:
         return "", fu
 
-    if fu != "—" and t.endswith(fu):
+    if fu != "-" and t.endswith(fu):
         return t[: -len(fu)].strip(), fu
 
     # Simple number + trailing unit fallback.
     m = re.match(r"^([+-]?\d+(?:[.,]\d+)?(?:-\d+(?:[.,]\d+)?)?)\s+(.+)$", t)
-    if m and fu == "—":
+    if m and fu == "-":
         return m.group(1).strip(), m.group(2).strip()
 
     return t, fu
@@ -272,7 +272,7 @@ def format_reference_range(range_entry: Optional[Dict[str, Any]]) -> str:
 
     range_type = stringify(range_entry.get("range_type"))
     unit = normalize_unit(range_entry.get("unit"))
-    unit_text = "" if unit == "—" else f" {unit}"
+    unit_text = "" if unit == "-" else f" {unit}"
 
     low = range_entry.get("low")
     high = range_entry.get("high")
@@ -307,7 +307,7 @@ def parse_numeric_for_coloring(value: Any) -> Optional[float]:
         return None
 
     lowered = text.lower()
-    if lowered in {"-", "—", "not reported", "negative", "normal", "none"}:
+    if lowered in {"-", "-", "not reported", "negative", "normal", "none"}:
         return None
 
     # Remove simple thousands separators, but keep decimal comma support.
@@ -327,10 +327,10 @@ def parse_numeric_for_coloring(value: Any) -> Optional[float]:
 def range_status_for_value(value: Any, range_entry: Optional[Dict[str, Any]]) -> Optional[str]:
     """
     Return:
-      "low"          → value is below a lower threshold
-      "high"         → value is above an upper threshold
-      "unexpected"   → qualitative value does not match expected values
-      None           → in range, no range, non-coloring, or not comparable
+      "low"          -> value is below a lower threshold
+      "high"         -> value is above an upper threshold
+      "unexpected"   -> qualitative value does not match expected values
+      None           -> in range, no range, non-coloring, or not comparable
 
     The app only colors entries where test_ranges.json has use_for_coloring=true.
     """
@@ -343,7 +343,7 @@ def range_status_for_value(value: Any, range_entry: Optional[Dict[str, Any]]) ->
     range_type = stringify(range_entry.get("range_type"))
     raw_value = stringify(value)
 
-    if not raw_value or raw_value in {"-", "—"}:
+    if not raw_value or raw_value in {"-", "-"}:
         return None
 
     if range_type == "expected_values":
@@ -824,7 +824,7 @@ def records_from_csv(path: Path) -> List[Dict[str, Any]]:
             test_name = stringify(row.get(test_header))
             if not test_name:
                 continue
-            unit_text = normalize_unit(row.get(unit_header, "—")) if unit_header else "—"
+            unit_text = normalize_unit(row.get(unit_header, "-")) if unit_header else "-"
             # If unit cell contains multiple units, keep it as a display unit unless the value cell carries its own.
             for date_h in date_headers:
                 raw_cell = stringify(row.get(date_h))
@@ -906,7 +906,7 @@ def display_cell_for_report(recs: List[Dict[str, Any]], all_units_for_test: List
         return "-"
 
     # If there is only one unit used for this test, keep cells clean and show only value.
-    include_unit = len([u for u in all_units_for_test if u and u != "—"]) > 1
+    include_unit = len([u for u in all_units_for_test if u and u != "-"]) > 1
 
     values = []
     for r in recs:
@@ -1900,7 +1900,7 @@ class MainWindow(QMainWindow):
         self.records_table.insertRow(row)
 
         today = datetime.now().strftime("%Y-%m-%d")
-        defaults = ["", today, "Other", "", "", "—", ""]
+        defaults = ["", today, "Other", "", "", "-", ""]
         for col, value in enumerate(defaults):
             item = QTableWidgetItem(value)
             if col in (0, 2):
@@ -2037,7 +2037,7 @@ class MainWindow(QMainWindow):
             if not value:
                 warnings.append(f"Record {idx}: missing/empty value for {date_text} / {name or '(missing test name)'}.")
             if not unit:
-                warnings.append(f"Record {idx}: missing unit for {date_text} / {name or '(missing test name)'}. Use — if no unit.")
+                warnings.append(f"Record {idx}: missing unit for {date_text} / {name or '(missing test name)'}. Use, if no unit.")
 
             key = (date_text, name, unit)
             seen_key[key] = seen_key.get(key, 0) + 1
@@ -2334,11 +2334,11 @@ This folder is optimized for AI analysis, not for human printing.
 
 ## Preferred reading order for the AI
 
-1. `blood_test_results.normalized.json` — exact normalized longitudinal records.
-2. `test_ranges.json` — reference/target ranges, reliability notes, and coloring policy.
-3. `flagged_values.json` or `flagged_values.csv` — precomputed low/high/unexpected values.
-4. `wide_history_with_ranges.csv` — spreadsheet-style view if a wide table is useful.
-5. `source_files_by_date.json` — original PDF/source filenames grouped by date.
+1. `blood_test_results.normalized.json`, exact normalized longitudinal records.
+2. `test_ranges.json`, reference/target ranges, reliability notes, and coloring policy.
+3. `flagged_values.json` or `flagged_values.csv`, precomputed low/high/unexpected values.
+4. `wide_history_with_ranges.csv`, spreadsheet-style view if a wide table is useful.
+5. `source_files_by_date.json`, original PDF/source filenames grouped by date.
 
 ## Important interpretation rules
 

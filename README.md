@@ -12,7 +12,7 @@ own machine as plain JSON; no cloud account, no third-party storage.
 - **Long-term lab archive**: drop result PDFs in a folder, enter the values in
   the desktop GUI, and get a per-test history with reference-range coloring.
 - **Phone access (PWA)**: installable web app for file search across your
-  indexed folders and per-test lookups ("Vitamin D" → every recorded date);
+  indexed folders and per-test lookups ("Vitamin D" -> every recorded date);
   the Web Share API ships a PDF to WhatsApp in two taps.
 - **System-tray controller**: hosts the Flask PWA in-process on a background
   thread (no subprocess, no second console); right-click to open the GUI,
@@ -52,7 +52,7 @@ shows an empty archive; add records through the GUI's Edit tab.
 
 The app serves an installable PWA on your LAN at `http://<your-pc-ip>:20000/`
 (set the `APP_SERVER_PORT` env var to change the port). On a phone, open that
-URL in Chrome/Safari → "Add to Home Screen" and you get a standalone app icon.
+URL in Chrome/Safari -> "Add to Home Screen" and you get a standalone app icon.
 
 For **HTTPS-from-anywhere**, point a
 [Cloudflare named tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)

@@ -25,7 +25,7 @@ The app spawns `cloudflared` as a child process and is supposed to kill it
 when the app exits. If that teardown doesn't work, `cloudflared` becomes an
 **orphan**: it stays connected to the Cloudflare edge and keeps the tunnel
 "up", but it now points at a **dead local origin** (the app's HTTP port is
-closed). Cloudflare happily routes phone traffic to it → every request → 502.
+closed). Cloudflare happily routes phone traffic to it -> every request -> 502.
 Worse, each app launch spawns *another* cloudflared, so orphans **stack** and
 Cloudflare load-balances across all of them.
 
@@ -39,8 +39,8 @@ Cloudflare load-balances across all of them.
 Get-Process cloudflared -ErrorAction SilentlyContinue | Format-Table Id,StartTime -AutoSize
 ```
 
-- App closed and **this lists nothing** → good, no orphan.
-- App closed and **cloudflared is still running** → **ORPHAN CONFIRMED.**
+- App closed and **this lists nothing** -> good, no orphan.
+- App closed and **cloudflared is still running** -> **ORPHAN CONFIRMED.**
 
 **B. With the app RUNNING, there should be exactly ONE cloudflared per app.**
 List them with command lines (each app's tunnel has a unique `--token`):
@@ -84,8 +84,8 @@ If you see `CreateJobObjectW` / `AssignProcessToJobObject` /
 
 Why it fails: on 64-bit Python a Windows `HANDLE` is 64-bit, but an
 undeclared ctypes function defaults its int args/return to **32-bit**
-`c_int`. The handle is silently **truncated** → `AssignProcessToJobObject`
-gets a garbage handle → returns `0` (failure) **with no exception**. The
+`c_int`. The handle is silently **truncated** -> `AssignProcessToJobObject`
+gets a garbage handle -> returns `0` (failure) **with no exception**. The
 child is never actually in the job, so `KILL_ON_JOB_CLOSE` never kills it.
 The code *looks* correct and even "succeeds".
 
@@ -249,7 +249,7 @@ the **Job object** works by force-killing the app:
 1. Start the app; confirm exactly one cloudflared is running (Step 1B).
 2. Force-kill the app process, `taskkill /F /PID <app_pid>` (this bypasses
    `atexit`, so only the Job object can save you).
-3. Within a few seconds, `Get-Process cloudflared` → **gone**.
+3. Within a few seconds, `Get-Process cloudflared` -> **gone**.
 
 If cloudflared survives a force-kill, the Job object is still not working,
 re-check the `argtypes`/`restype` declarations and that the job HANDLE is
@@ -259,11 +259,11 @@ stored somewhere long-lived (not garbage-collected).
 
 ## Checklist summary
 
-- [ ] App closed → no cloudflared left running.
-- [ ] App running → exactly one cloudflared, one per app, correct token.
+- [ ] App closed -> no cloudflared left running.
+- [ ] App running -> exactly one cloudflared, one per app, correct token.
 - [ ] Source: ctypes Job-object calls declare `argtypes`/`restype` and check
       return values.
 - [ ] A startup self-heal kills orphans by **this app's** token.
-- [ ] Force-kill test passes: kill the app hard → cloudflared dies in seconds.
+- [ ] Force-kill test passes: kill the app hard -> cloudflared dies in seconds.
 - [ ] (If relevant) the cloudflared Public Hostname is **HTTP**, not HTTPS
-      (HTTPS → 502 `tls: first record...`; different bug, see playbook §5).
+      (HTTPS -> 502 `tls: first record...`; different bug, see playbook §5).
