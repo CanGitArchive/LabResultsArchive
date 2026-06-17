@@ -278,7 +278,7 @@ def format_reference_range(range_entry: Optional[Dict[str, Any]]) -> str:
     high = range_entry.get("high")
 
     if range_type == "interval":
-        return f"{format_range_number(low)}–{format_range_number(high)}{unit_text}"
+        return f"{format_range_number(low)}-{format_range_number(high)}{unit_text}"
     if range_type == "upper_limit":
         return f"< {format_range_number(high)}{unit_text}"
     if range_type == "lower_limit":
@@ -2350,7 +2350,7 @@ This folder is optimized for AI analysis, not for human printing.
 - `use_for_coloring=false` in `test_ranges.json` means the value is too lab-dependent, timing-dependent, qualitative, or unreliable for automatic coloring.
 - Light yellow in the app/PDF means below the configured range.
 - Light red means above the configured range or unexpected qualitative value.
-- For clinical interpretation, prioritize trends, repeated abnormalities, symptoms, medications/supplements, fasting status, hydration, illness, and the doctor’s judgment.
+- For clinical interpretation, prioritize trends, repeated abnormalities, symptoms, medications/supplements, fasting status, hydration, illness, and the doctor's judgment.
 
 ## Export summary
 
